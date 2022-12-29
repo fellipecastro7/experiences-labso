@@ -1,0 +1,1 @@
+*/5 * * * * echo "Realizando tarefa 01." > dev/pts/_

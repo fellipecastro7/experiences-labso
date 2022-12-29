@@ -1,0 +1,47 @@
+#!/bin/bash
+
+cd /home/user/Receitas/
+echo "Fazendo backup dos arquivos de Receitas para gerar chave:"
+tar -czf backup.tar.gz ./*
+echo "Backup concluído com sucesso!"
+sha256sum backup.tar.gz | awk '{print $1}' > chave.txt
+rm -rf backup.tar.gz
+cd /home/user/
+diff /home/user/Modelo/chave.txt /home/user/Receitas/chave.txt > diferencas.txt
+cd /home/user/Receitas/
+rm chave.txt
+cd /home/user/
+
+if [ -s diferencas.txt ];
+then
+    echo "Diretórios diferentes, há arquivos com necessidade de reparos!"
+    echo ""
+    echo "Iniciando sessão de reparos:"
+    echo "Removendo arquivos modificados de Receitas..."
+    cd /home/user/Receitas/
+    rm ./*
+    echo "Arquivos removidos!"
+    echo ""
+    echo "Extraindo arquivos de Modelo e enviando para Receitas..."
+    cd /home/user/Modelo/
+    unzip backup.zip -d /home/user/Receitas/
+    echo "Extração finalizada!"
+    echo "Arquivos restaurados!"
+    echo ""
+    echo "Fazendo novo backup de Receitas para gerar chave"
+    cd /home/user/Receitas/
+    tar -czf backup.tar.gz ./*
+    sha256sum backup.tar.gz | awk '{print $1}' > /home/user/Modelo/chave.txt
+    rm -rf backup.tar.gz
+    echo "Sessão de reparos finalizada com sucesso!"
+
+    sendemail -f "emailInstitucional" \
+            -t "emailDestinatario" \
+            -u "Modificações nos Arquivos" \
+            -m "Foram detectadas modificações em arquivos de seu diretório. A restauração dos arquivos modificados foi realizada com êxito." \
+            -s cupijo.ufpa.br:587 \
+            -xu "emailInstitucional" \
+            -xp "senhaInstitucional"
+else
+    echo "Diretórios iguais, não há arquivos com necessidade de reparos!"
+fi
